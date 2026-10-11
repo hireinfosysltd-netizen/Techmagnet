@@ -13,11 +13,20 @@ import {
   Sparkles,
   Globe,
   ArrowUpRight,
+  AlertCircle,
 } from 'lucide-react';
 import { useAgency } from '../context/AgencyContext';
 
 export const PaymentModal: React.FC = () => {
-  const { isPaymentModalOpen, closePaymentModal, selectedPaymentPlan, customPaymentAmount, settings, openWhatsApp } = useAgency();
+  const {
+    isPaymentModalOpen,
+    closePaymentModal,
+    selectedPaymentPlan,
+    customPaymentAmount,
+    settings,
+    openWhatsApp,
+    setIsAdminModalOpen,
+  } = useAgency();
 
   const utrInputId = useId();
   const payerNameInputId = useId();
@@ -36,7 +45,7 @@ export const PaymentModal: React.FC = () => {
   const [selectedPlatform, setSelectedPlatform] = useState('IDP');
   const [receiptId, setReceiptId] = useState('');
 
-  const upiId = settings.upi?.upiId || '7878570874@mbk';
+  const upiId = (settings.upi?.upiId || '').trim();
   const payeeName = settings.upi?.payeeName || 'TECHMAGNET';
 
   // Sync amount and plan on open
@@ -59,14 +68,19 @@ export const PaymentModal: React.FC = () => {
     setUtrNumber('');
   }, [selectedPaymentPlan, customPaymentAmount, isPaymentModalOpen]);
 
-  // Construct standard NPCI UPI Payment URI
-  const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(
-    payeeName
-  )}&am=${amount}&cu=INR&tn=${encodeURIComponent(`TECHMAGNET-${planTitle.replace(/\s+/g, '')}-CAMPAIGN`)}`;
+  // Construct standard NPCI UPI Payment URI if UPI ID is configured
+  const upiUri = upiId
+    ? `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(
+        payeeName
+      )}&am=${amount}&cu=INR&tn=${encodeURIComponent(`TECHMAGNET-${planTitle.replace(/\s+/g, '')}-CAMPAIGN`)}`
+    : '';
 
   // Generate high-resolution QR code
   useEffect(() => {
-    if (!isPaymentModalOpen) return;
+    if (!isPaymentModalOpen || !upiId) {
+      setQrCodeDataUrl('');
+      return;
+    }
 
     QRCode.toDataURL(upiUri, {
       width: 320,
@@ -78,7 +92,7 @@ export const PaymentModal: React.FC = () => {
     })
       .then((url) => setQrCodeDataUrl(url))
       .catch((err) => console.error('QR generation error:', err));
-  }, [upiUri, isPaymentModalOpen]);
+  }, [upiUri, isPaymentModalOpen, upiId]);
 
   if (!isPaymentModalOpen) return null;
 
@@ -223,67 +237,110 @@ Please verify my payment and initiate campaign onboarding.`;
               ))}
             </div>
 
-            {/* UPI ID Copy Card */}
-            <div className="p-3.5 rounded-xl bg-[#0c1429] border border-blue-500/30 flex items-center justify-between gap-3">
-              <div>
-                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
-                  Official Merchant UPI ID
-                </span>
-                <strong className="text-base font-mono text-white tracking-wider select-all">
-                  {upiId}
-                </strong>
+            {/* When UPI ID is NOT configured yet */}
+            {!upiId ? (
+              <div className="p-6 rounded-2xl bg-gradient-to-b from-[#0e1629] to-[#080d1a] border border-amber-500/30 text-center space-y-4">
+                <div className="w-12 h-12 rounded-xl bg-amber-950/60 border border-amber-500/40 text-amber-400 flex items-center justify-center mx-auto shadow-inner">
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="text-base font-bold text-white">UPI Gateway Not Configured Yet</h4>
+                  <p className="text-xs text-slate-300 mt-1 max-w-sm mx-auto leading-relaxed">
+                    No UPI ID has been set by the administrator yet. You can connect with our team on WhatsApp for manual enrollment, or log in to the admin panel to set up your UPI ID.
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closePaymentModal();
+                      openWhatsApp(`Hi Techmagnet, I want to enroll in the ${planTitle} (₹${amount.toLocaleString('en-IN')}). Please share payment details.`);
+                    }}
+                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs inline-flex items-center justify-center gap-2 shadow-md transition-all active:scale-95"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span>Pay / Enroll via WhatsApp</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closePaymentModal();
+                      setIsAdminModalOpen(true);
+                    }}
+                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-semibold text-xs inline-flex items-center justify-center gap-1.5 border border-slate-700 transition-colors"
+                  >
+                    <Lock className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Admin: Set or Edit UPI</span>
+                  </button>
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={handleCopyUpi}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600/30 hover:bg-blue-600 text-blue-200 hover:text-white border border-blue-500/40 text-xs font-semibold transition-all"
-              >
-                {copiedUpi ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>Copy UPI ID</span>
-                  </>
-                )}
-              </button>
-            </div>
-
-            {/* QR Code Container */}
-            <div className="p-5 rounded-2xl bg-[#080d1a] border border-slate-800 text-center flex flex-col items-center">
-              <span className="text-xs font-semibold text-slate-300 mb-3 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-                Scan QR with Any Indian UPI App
-              </span>
-
-              <div className="p-3 rounded-2xl bg-white shadow-xl inline-block mb-3 border-4 border-blue-500/20">
-                {qrCodeDataUrl ? (
-                  <img
-                    src={qrCodeDataUrl}
-                    alt="Scan UPI QR Code to pay Techmagnet"
-                    className="w-52 h-52 object-contain"
-                  />
-                ) : (
-                  <div className="w-52 h-52 flex items-center justify-center text-slate-400 text-xs font-mono">
-                    Generating UPI QR...
+            ) : (
+              <>
+                {/* UPI ID Copy Card */}
+                <div className="p-3.5 rounded-xl bg-[#0c1429] border border-blue-500/30 flex items-center justify-between gap-3">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                      Official Merchant UPI ID
+                    </span>
+                    <strong className="text-base font-mono text-white tracking-wider select-all">
+                      {upiId}
+                    </strong>
                   </div>
-                )}
-              </div>
+                  <button
+                    type="button"
+                    onClick={handleCopyUpi}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600/30 hover:bg-blue-600 text-blue-200 hover:text-white border border-blue-500/40 text-xs font-semibold transition-all"
+                  >
+                    {copiedUpi ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copy UPI ID</span>
+                      </>
+                    )}
+                  </button>
+                </div>
 
-              {/* Supported apps strip */}
-              <div className="flex flex-wrap items-center justify-center gap-2 text-[11px] text-slate-400 mt-1">
-                <span>Supported:</span>
-                <span className="font-semibold text-slate-200">PhonePe</span>·
-                <span className="font-semibold text-slate-200">Google Pay</span>·
-                <span className="font-semibold text-slate-200">Paytm</span>·
-                <span className="font-semibold text-slate-200">BHIM</span>·
-                <span className="font-semibold text-slate-200">MobiKwik</span>·
-                <span className="font-semibold text-slate-200">Cred</span>
-              </div>
-            </div>
+                {/* QR Code Container */}
+                <div className="p-5 rounded-2xl bg-[#080d1a] border border-slate-800 text-center flex flex-col items-center">
+                  <span className="text-xs font-semibold text-slate-300 mb-3 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                    Scan QR with Any Indian UPI App
+                  </span>
+
+                  <div className="p-3 rounded-2xl bg-white shadow-xl inline-block mb-3 border-4 border-blue-500/20">
+                    {qrCodeDataUrl ? (
+                      <img
+                        src={qrCodeDataUrl}
+                        alt="Scan UPI QR Code to pay Techmagnet"
+                        className="w-52 h-52 object-contain"
+                      />
+                    ) : (
+                      <div className="w-52 h-52 flex items-center justify-center text-slate-400 text-xs font-mono">
+                        Generating UPI QR...
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Supported apps strip */}
+                  <div className="flex flex-wrap items-center justify-center gap-2 text-[11px] text-slate-400 mt-1">
+                    <span>Supported:</span>
+                    <span className="font-semibold text-slate-200">PhonePe</span>·
+                    <span className="font-semibold text-slate-200">Google Pay</span>·
+                    <span className="font-semibold text-slate-200">Paytm</span>·
+                    <span className="font-semibold text-slate-200">BHIM</span>·
+                    <span className="font-semibold text-slate-200">MobiKwik</span>·
+                    <span className="font-semibold text-slate-200">Cred</span>
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* Linked Payment / Deposit Portal Banner */}
             {settings.upi?.paymentLink && (
@@ -321,11 +378,11 @@ Please verify my payment and initiate campaign onboarding.`;
                 >
                   <Globe className="w-4 h-4" />
                   <span>
-                    Open Deposit / Payment Gateway ({(() => {
+                    Open Payment Gateway ({(() => {
                       try {
                         return new URL(settings.upi.paymentLink).hostname;
                       } catch {
-                        return 'winbuzz.biz';
+                        return 'External Gateway';
                       }
                     })()})
                   </span>
@@ -333,14 +390,16 @@ Please verify my payment and initiate campaign onboarding.`;
                 </a>
               )}
 
-              <a
-                href={upiUri}
-                className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-blue-600/30 transition-all text-center active:scale-98"
-              >
-                <Smartphone className="w-4 h-4" />
-                <span>Pay ₹{amount.toLocaleString('en-IN')} via UPI App</span>
-                <ExternalLink className="w-4 h-4" />
-              </a>
+              {upiId && (
+                <a
+                  href={upiUri}
+                  className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-blue-600/30 transition-all text-center active:scale-98"
+                >
+                  <Smartphone className="w-4 h-4" />
+                  <span>Pay ₹{amount.toLocaleString('en-IN')} via UPI App</span>
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              )}
 
               <button
                 type="button"

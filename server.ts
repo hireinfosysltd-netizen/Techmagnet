@@ -35,22 +35,14 @@ interface UpiConfig {
 }
 
 const DEFAULT_CONFIG: UpiConfig = {
-  upiId: '7878570874@mbk',
+  upiId: '',
   payeeName: 'TECHMAGNET',
-  paymentLink: 'https://winbuzz.biz/m/deposit',
+  paymentLink: '',
   merchantCode: 'TECHMAGNET',
   acceptedApps: ['PhonePe', 'Google Pay', 'Paytm', 'BHIM', 'MobiKwik', 'CRED'],
   lastSyncedAt: new Date().toISOString(),
   syncSource: 'manual',
-  syncLogs: [
-    {
-      id: 'init-1',
-      timestamp: new Date().toISOString(),
-      upiId: '7878570874@mbk',
-      source: 'Default Initializer',
-      success: true,
-    },
-  ],
+  syncLogs: [],
 };
 
 function readConfig(): UpiConfig {
@@ -101,7 +93,7 @@ app.get('/api/upi', (req, res) => {
   });
 });
 
-// Helper: parse UPI URL format (e.g. upi://pay?pa=7878570874@mbk&pn=TECHMAGNET...)
+// Helper: parse UPI URL format (e.g. upi://pay?pa=merchant@upi&pn=TECHMAGNET...)
 function parseUpiUrl(rawUrl: string): { upiId?: string; payeeName?: string } {
   if (!rawUrl) return {};
   try {
@@ -150,16 +142,16 @@ app.post('/api/upi/sync', (req, res) => {
   }
 
   // Parse candidate UPI ID
-  let targetUpiId = upiId ? String(upiId).trim() : '';
+  let targetUpiId = upiId !== undefined ? String(upiId).trim() : undefined;
   let targetPayee = payeeName ? String(payeeName).trim() : '';
-  let targetPaymentLink = paymentLink ? String(paymentLink).trim() : '';
+  let targetPaymentLink = paymentLink !== undefined ? String(paymentLink).trim() : undefined;
 
   // If a UPI link was sent (e.g. upi://pay?pa=...)
   if (upiLink) {
     const parsed = parseUpiUrl(String(upiLink));
     if (parsed.upiId) targetUpiId = parsed.upiId;
     if (parsed.payeeName && !targetPayee) targetPayee = parsed.payeeName;
-    if (!targetPaymentLink) targetPaymentLink = String(upiLink);
+    if (targetPaymentLink === undefined) targetPaymentLink = String(upiLink);
   }
 
   // If a generic payment link was sent and targetUpiId is empty, try to parse it
@@ -169,7 +161,7 @@ app.post('/api/upi/sync', (req, res) => {
     if (parsed.payeeName && !targetPayee) targetPayee = parsed.payeeName;
   }
 
-  if (!targetUpiId && !targetPaymentLink && !scannerImageUrl) {
+  if (targetUpiId === undefined && targetPaymentLink === undefined && !scannerImageUrl) {
     return res.status(400).json({
       success: false,
       error: 'Missing required field: provide at least "upiId", "paymentLink", "upiLink", or "scannerImageUrl".',
@@ -179,11 +171,14 @@ app.post('/api/upi/sync', (req, res) => {
   const currentConfig = readConfig();
 
   const now = new Date().toISOString();
+  const resolvedUpiId = targetUpiId !== undefined ? targetUpiId : currentConfig.upiId;
+  const resolvedPaymentLink = targetPaymentLink !== undefined ? targetPaymentLink : currentConfig.paymentLink;
+
   const updatedConfig: UpiConfig = {
     ...currentConfig,
-    upiId: targetUpiId || currentConfig.upiId,
+    upiId: resolvedUpiId,
     payeeName: targetPayee || currentConfig.payeeName,
-    paymentLink: targetPaymentLink !== undefined ? targetPaymentLink : currentConfig.paymentLink,
+    paymentLink: resolvedPaymentLink,
     scannerImageUrl: scannerImageUrl || currentConfig.scannerImageUrl,
     lastSyncedAt: now,
     syncSource: (source as any) || 'app_webhook',
@@ -192,8 +187,8 @@ app.post('/api/upi/sync', (req, res) => {
       {
         id: `sync-${Date.now()}`,
         timestamp: now,
-        upiId: targetUpiId || currentConfig.upiId,
-        paymentLink: targetPaymentLink || currentConfig.paymentLink,
+        upiId: resolvedUpiId || 'Cleared',
+        paymentLink: resolvedPaymentLink || undefined,
         source: source || 'External App Webhook',
         success: true,
       },
@@ -204,7 +199,7 @@ app.post('/api/upi/sync', (req, res) => {
 
   return res.json({
     success: true,
-    message: 'Payment details successfully synced to TECHMAGNET website!',
+    message: resolvedUpiId ? 'Payment details successfully updated!' : 'UPI configuration updated (no active UPI ID)',
     activeUpiId: updatedConfig.upiId,
     activePaymentLink: updatedConfig.paymentLink,
     payeeName: updatedConfig.payeeName,
@@ -217,7 +212,7 @@ app.post('/api/upi/reset', (req, res) => {
   writeConfig(DEFAULT_CONFIG);
   res.json({
     success: true,
-    message: 'Reset to default TECHMAGNET UPI gateway (7878570874@mbk)',
+    message: 'Reset UPI configuration to unconfigured state',
     config: DEFAULT_CONFIG,
   });
 });

@@ -55,8 +55,11 @@ export const AgencyProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (!parsed.gst) {
           parsed.gst = DEFAULT_GST;
         }
-        if (!parsed.upi || !parsed.upi.upiId) {
+        if (!parsed.upi) {
           parsed.upi = DEFAULT_UPI;
+        } else if (parsed.upi.upiId === '7878570874@mbk') {
+          // Clear any legacy default placeholder
+          parsed.upi.upiId = '';
         }
         return parsed;
       }
@@ -136,11 +139,15 @@ export const AgencyProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const res = await fetch('/api/upi');
       if (res.ok) {
         const data = await res.json();
-        if (data.upi && data.upi.upiId) {
+        if (data.upi) {
           setSettings((prev) => {
+            const serverUpiId = data.upi.upiId || '';
+            const serverPaymentLink = data.upi.paymentLink || '';
+            const serverPayeeName = data.upi.payeeName || 'TECHMAGNET';
             const hasChanged =
-              prev.upi.upiId !== data.upi.upiId ||
-              prev.upi.paymentLink !== data.upi.paymentLink ||
+              prev.upi.upiId !== serverUpiId ||
+              prev.upi.paymentLink !== serverPaymentLink ||
+              prev.upi.payeeName !== serverPayeeName ||
               prev.upi.lastSyncedAt !== data.upi.lastSyncedAt;
             if (hasChanged) {
               return {
@@ -148,6 +155,9 @@ export const AgencyProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 upi: {
                   ...prev.upi,
                   ...data.upi,
+                  upiId: serverUpiId,
+                  paymentLink: serverPaymentLink,
+                  payeeName: serverPayeeName,
                 },
               };
             }

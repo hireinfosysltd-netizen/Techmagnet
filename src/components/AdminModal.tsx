@@ -95,7 +95,7 @@ export const AdminModal: React.FC = () => {
       setDraftContact(settings.contact);
       setDraftGst(settings.gst);
       setDraftUpi(settings.upi || {
-        upiId: '7878570874@mbk',
+        upiId: '',
         payeeName: 'TECHMAGNET',
         merchantCode: 'TECHMAGNET',
         acceptedApps: ['PhonePe', 'Google Pay', 'Paytm', 'BHIM', 'MobiKwik', 'CRED'],
@@ -116,6 +116,8 @@ export const AdminModal: React.FC = () => {
       })
         .then((url) => setPreviewQrUrl(url))
         .catch(() => setPreviewQrUrl(''));
+    } else {
+      setPreviewQrUrl('');
     }
   }, [draftUpi?.upiId, draftUpi?.payeeName]);
 
@@ -826,8 +828,35 @@ export const AdminModal: React.FC = () => {
                 <div className="p-3 rounded-lg bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 text-xs font-semibold flex items-center gap-2 animate-fade-in">
                   <Check className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span>
-                    Payment configuration successfully saved! UPI ID &quot;{draftUpi.upiId}&quot; is active across the entire website.
+                    Payment configuration successfully saved! {draftUpi.upiId ? `UPI ID "${draftUpi.upiId}" is active across the entire website.` : 'UPI is now unconfigured.'}
                   </span>
+                </div>
+              )}
+
+              {/* Status Alert Banner */}
+              {!draftUpi.upiId ? (
+                <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-200 text-xs flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-white">No UPI ID is currently set</p>
+                    <p className="text-[11px] text-amber-300/80 mt-0.5">
+                      Enter your UPI ID below or upload a QR scanner screenshot, then click <strong>&quot;Save Payment Settings&quot;</strong> to activate UPI payments across the website.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>Active UPI ID: <strong className="font-mono text-white">{draftUpi.upiId}</strong> ({draftUpi.payeeName || 'TECHMAGNET'})</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setDraftUpi({ ...draftUpi, upiId: '' })}
+                    className="text-[11px] text-red-400 hover:text-red-300 font-medium underline transition-colors"
+                  >
+                    Clear UPI ID
+                  </button>
                 </div>
               )}
 
@@ -838,24 +867,27 @@ export const AdminModal: React.FC = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-slate-300 mb-1">
-                        Primary UPI ID (VPA) <span className="text-emerald-400">*</span>
+                        Primary UPI ID (VPA)
                       </label>
                       <input
                         type="text"
-                        required
                         value={draftUpi.upiId}
                         onChange={(e) => setDraftUpi({ ...draftUpi, upiId: e.target.value.trim() })}
                         className="w-full px-3.5 py-2.5 rounded-lg bg-[#0a1020] border border-slate-700 text-white font-mono font-bold text-sm focus:border-emerald-500 focus:outline-none transition-colors"
-                        placeholder="e.g. 7878570874@mbk"
+                        placeholder="Enter UPI ID (e.g. merchant@okaxis, yourname@upi)"
                       />
                       <div className="flex items-center justify-between text-[11px] mt-1.5">
                         <span className="text-slate-400">Current active ID:</span>
-                        <span className="text-emerald-400 font-mono font-semibold">{draftUpi.upiId}</span>
+                        {draftUpi.upiId ? (
+                          <span className="text-emerald-400 font-mono font-semibold">{draftUpi.upiId}</span>
+                        ) : (
+                          <span className="text-amber-400 font-semibold">Not Set</span>
+                        )}
                       </div>
-                      {!draftUpi.upiId.includes('@') && (
+                      {draftUpi.upiId && !draftUpi.upiId.includes('@') && (
                         <p className="text-[11px] text-amber-400 mt-1 flex items-center gap-1">
                           <AlertCircle className="w-3 h-3" />
-                          <span>A valid UPI ID must include &apos;@&apos; (e.g. 7878570874@mbk)</span>
+                          <span>A valid UPI ID must include &apos;@&apos; (e.g. merchant@okhdfcbank)</span>
                         </p>
                       )}
                     </div>
@@ -971,12 +1003,13 @@ export const AdminModal: React.FC = () => {
                       />
                     </div>
                   ) : (
-                    <div className="w-36 h-36 bg-slate-800 rounded-lg flex items-center justify-center text-slate-500 text-xs mb-2">
-                      Generating QR...
+                    <div className="w-36 h-36 bg-slate-800/70 rounded-lg flex flex-col items-center justify-center text-slate-400 text-xs mb-2 border border-slate-700/60 p-2 text-center">
+                      <Smartphone className="w-6 h-6 text-slate-500 mb-1" />
+                      <span>{draftUpi.upiId ? 'Generating QR...' : 'No UPI ID set'}</span>
                     </div>
                   )}
                   <span className="text-xs font-mono font-bold text-emerald-300">
-                    {draftUpi.upiId}
+                    {draftUpi.upiId || 'No UPI ID Configured'}
                   </span>
                   <span className="text-[10px] text-slate-500 mt-0.5">
                     {draftUpi.payeeName || 'TECHMAGNET'}
@@ -1067,7 +1100,7 @@ export const AdminModal: React.FC = () => {
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer 214966" \\
   -d '{
-    "upiId": "7878570874@mbk",
+    "upiId": "${draftUpi.upiId || 'yourname@upi'}",
     "paymentLink": "https://your-payment-link.com",
     "payeeName": "TECHMAGNET",
     "source": "My Scanner App"
@@ -1111,7 +1144,7 @@ final response = await http.post(
 import requests
 
 payload = {
-    "upiId": "7878570874@mbk",
+    "upiId": "${draftUpi.upiId || 'yourname@upi'}",
     "paymentLink": "https://your-payment-link.com",
     "payeeName": "TECHMAGNET",
     "source": "Python Automation"
@@ -1127,9 +1160,10 @@ print(r.json())`}
                     <button
                       type="button"
                       onClick={() => {
+                        const targetId = draftUpi.upiId || 'yourname@upi';
                         const snippet =
                           activeCodeTab === 'curl'
-                            ? `curl -X POST "${typeof window !== 'undefined' ? window.location.origin : 'https://techmagnet.in'}/api/upi/sync" -H "Content-Type: application/json" -H "Authorization: Bearer 214966" -d '{"upiId":"7878570874@mbk","payeeName":"TECHMAGNET"}'`
+                            ? `curl -X POST "${typeof window !== 'undefined' ? window.location.origin : 'https://techmagnet.in'}/api/upi/sync" -H "Content-Type: application/json" -H "Authorization: Bearer 214966" -d '{"upiId":"${targetId}","payeeName":"TECHMAGNET"}'`
                             : activeCodeTab === 'android'
                             ? `// Android OkHttp POST to ${typeof window !== 'undefined' ? window.location.origin : 'https://techmagnet.in'}/api/upi/sync`
                             : `// Flutter HTTP POST to ${typeof window !== 'undefined' ? window.location.origin : 'https://techmagnet.in'}/api/upi/sync`;
@@ -1162,10 +1196,10 @@ print(r.json())`}
                       <button
                         type="button"
                         disabled={simulating}
-                        onClick={() => handleSimulateAppUpload('7878570874@mbk')}
+                        onClick={() => handleSimulateAppUpload(draftUpi.upiId || 'techmagnet@okaxis')}
                         className="px-3 py-1.5 rounded-lg bg-blue-600/30 hover:bg-blue-600 text-blue-200 hover:text-white border border-blue-500/40 text-xs font-semibold transition-all disabled:opacity-50"
                       >
-                        {simulating ? 'Sending...' : 'Simulate: 7878570874@mbk'}
+                        {simulating ? 'Sending...' : 'Test Sync: App to Website'}
                       </button>
                     </div>
                   </div>

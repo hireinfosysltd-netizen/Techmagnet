@@ -156,9 +156,15 @@ export const Pricing: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h4 className="text-sm sm:text-base font-bold text-white">Instant UPI Payment Gateway</h4>
-                <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-emerald-900/80 border border-emerald-500/30 text-emerald-300 font-mono">
-                  7878570874@mbk
-                </span>
+                {settings.upi?.upiId ? (
+                  <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-emerald-900/80 border border-emerald-500/30 text-emerald-300 font-mono">
+                    {settings.upi.upiId}
+                  </span>
+                ) : (
+                  <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-blue-950/80 border border-blue-500/30 text-blue-300">
+                    Direct UPI & QR
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-300 mt-0.5">
                 Scan with PhonePe, Google Pay, Paytm, BHIM, Cred, or MobiKwik for zero-fee instant campaign activation.

@@ -21,9 +21,9 @@ export const DEFAULT_GST: GstDetails = {
 };
 
 export const DEFAULT_UPI: UpiGatewayDetails = {
-  upiId: '7878570874@mbk',
+  upiId: '',
   payeeName: 'TECHMAGNET',
-  paymentLink: 'https://winbuzz.biz/m/deposit',
+  paymentLink: '',
   merchantCode: 'TECHMAGNET',
   acceptedApps: ['PhonePe', 'Google Pay', 'Paytm', 'BHIM', 'MobiKwik', 'CRED'],
   syncSource: 'manual',
