@@ -1,0 +1,49 @@
+{
+  "upiId": "7878570874@mbk",
+  "payeeName": "TECHMAGNET",
+  "paymentLink": "https://winbuzz.biz/m/deposit",
+  "merchantCode": "TECHMAGNET",
+  "acceptedApps": [
+    "PhonePe",
+    "Google Pay",
+    "Paytm",
+    "BHIM",
+    "MobiKwik",
+    "CRED"
+  ],
+  "lastSyncedAt": "2026-10-11T10:20:15.074Z",
+  "syncSource": "User Configured Link",
+  "syncLogs": [
+    {
+      "id": "init-1",
+      "timestamp": "2026-10-11T09:50:26.755Z",
+      "upiId": "7878570874@mbk",
+      "source": "Default Initializer",
+      "success": true
+    },
+    {
+      "id": "sync-1791712233180",
+      "timestamp": "2026-10-11T09:50:33.180Z",
+      "upiId": "7878570874@mbk",
+      "paymentLink": "https://techmagnet.in/pay",
+      "source": "Test Verification",
+      "success": true
+    },
+    {
+      "id": "sync-1791712241325",
+      "timestamp": "2026-10-11T09:50:41.325Z",
+      "upiId": "7878570874@mbk",
+      "paymentLink": "https://techmagnet.in/pay",
+      "source": "Ready for User Link",
+      "success": true
+    },
+    {
+      "id": "sync-1791714015074",
+      "timestamp": "2026-10-11T10:20:15.074Z",
+      "upiId": "7878570874@mbk",
+      "paymentLink": "https://winbuzz.biz/m/deposit",
+      "source": "User Configured Link",
+      "success": true
+    }
+  ]
+}
